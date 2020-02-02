@@ -1,0 +1,101 @@
+---
+title: "4996explore"
+author: "Derek Liu"
+date: "1/21/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## read csv
+
+```{r}
+pff19 <- read.csv('2019 PFF All Plays.csv')
+```
+
+## What are the optimal situations for a team to make a pass play to the endzone?
+### Relevant Features
+```{r}
+features <- data.frame(pff19$pff_2MINUTE,
+pff19$pff_BLITZDOG,
+pff19$pff_CATCHABLE,
+pff19$pff_CLOCK,
+pff19$pff_DEEPPASS,
+pff19$pff_DISTANCE,
+pff19$pff_DOWN,
+pff19$pff_DRIVE,
+pff19$pff_DRIVESTARTFIELDPOSITION,
+pff19$pff_FIELDPOSITION,
+pff19$pff_GARBAGETIME,
+pff19$pff_HASH,
+pff19$pff_OFFPERSONNEL,
+pff19$pff_OFFSCORE,
+pff19$pff_ONLOS,
+pff19$pff_PASSDEPTH,
+pff19$pff_PASSDIRECTION,
+pff19$pff_PASSRESULT,
+pff19$pff_PASSZONE,
+pff19$pff_PLAYENDFIELDPOSITION,
+pff19$pff_QUARTER,
+pff19$pff_SCORE,
+pff19$pff_RUNPASS,
+pff19$pff_TOUCHDOWN,
+pff19$pff_YARDSAFTERCATCH,
+pff19$pff_DRIVEENDEVENT)
+str(features)
+```
+
+```{r}
+summary(features$pff19.pff_PASSRESULT)
+```
+
+```{r}
+features2 <- subset(features, features$pff19.pff_PASSRESULT == "COMPLETE" &
+                        features$pff19.pff_TOUCHDOWN != "" &
+                        features$pff19.pff_YARDSAFTERCATCH == 0)
+sum(features$pff19.pff_TOUCHDOWN != "")
+```
+
+## Relevant Questions and Features for Aggressive Plays
+### How should an aggressive play be defined?
+### What situations should a team go for an agressive play?
+### An analysis on all plays that were aggresive, and an analysis on all plays that were in a situation for aggressiv plays but the team went with a conservative play. Compare results and statistical difference so coaches can make in game decisions on whether an aggressive play should be used.
+### The most important outcome of a game is getting the win, so for a team to execute an aggressive play, the positive result of the play should outweight the negative result of the play in terms of win percentage difference before and after the play.
+
+Process: 1) Determine all situations where the team COULD make an aggressive play, subset these observations. 2) Subset these situations into plays that were aggressive and non-aggressive. 3) Statistical analysis, as well as comparison. 3) Determine the proportion of times a team should be aggressive vs. non-aggressive. 
+
+## Situations where aggressive plays could occur:
+1) 4th down (Need to determine distance to next 1st down and time left on clock)
+2) L2M
+3) L2M first half
+
+
+```{r}
+library(dplyr)
+down4.yrds2 <- subset(features, 
+                      features$pff19.pff_DOWN == 4 &
+                        features$pff19.pff_DISTANCE < 5 &
+                        features$pff19.pff_QUARTER != 3 )
+d4y2_mutate <- down4.yrds2 %>%
+  mutate(ScoreOnDrive = ifelse(down4.yrds2$pff19.pff_DRIVEENDEVENT == "TOUCHDOWN" | down4.yrds2$pff19.pff_DRIVEENDEVENT == "FIELD GOAL", 1, 0))
+
+playmade <- sum(down4.yrds2$pff19.pff_RUNPASS == "R") + sum(down4.yrds2$pff19.pff_RUNPASS == "P")
+
+d4y2_obs <- nrow(down4.yrds2)
+
+playmade / d4y2_obs * 100
+
+summary(features$pff19.pff_DRIVEENDEVENT)
+```
+## Note - figure out how to separate score into 2 columns and assign score of current team on offensive to respective score and winning/losing status
+
+
+## Question for Rodu - How to figure out which team won the game?
+
+```{r}
+onegame <- subset(pff19, pff19$pff_GAMEID == 16800)
+onegame1 <- data.frame(onegame$pff_DRIVEENDEVENT,
+                       onegame$pff_SCORE)
+```
