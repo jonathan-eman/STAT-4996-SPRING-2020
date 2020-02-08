@@ -43,8 +43,10 @@ data_2019 %>%
    ) -> subset_2019
 
 subset_2019 %>%
-   select(HOME_SCORE, AWAY_SCORE, OFF_TEAM, DEF_TEAM, pff_OFFSCORE, pff_DEFSCORE) %>%
-   View()
+   group_by(pff_GAMEID) %>%
+   slice(n()) %>%
+   mutate(WINNER = ifelse(HOME_SCORE > AWAY_SCORE, "Home", "Away")) %>%
+   select(pff_GAMEID, HOME_SCORE, AWAY_SCORE, WINNER) -> winners_2019
 
 
 
