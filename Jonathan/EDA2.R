@@ -1,3 +1,13 @@
+# indicate if home = away, etc.
+# filter home != away
+# separate home.away -> map off_score and def_score
+# create variable for winner
+
+# win prob model - time left, field position, score differential
+# see how win probability changes with aggressive play vs. non-aggressive play (coarse events: short yard, long yard, field goal, punt)
+# calculate from last 5 minutes of game
+# run play on 4th down aggressive in "aggressive scenario" - short yardage
+
 setwd("~/R/STAT 4996")
 
 library(tidyverse)
@@ -7,23 +17,36 @@ data_2019 <- read.csv("2019 PFF All Plays.csv")
 
 # Filter for only plays where team was tied or losing
 data_2019 %>%
-   filter(pff_SCOREDIFFERENTIAL <= 0) %>%
+   filter(pff_SCOREDIFFERENTIAL < 0,
+          pff_QUARTER == 4,
+          pff_CLOCK <= 5) %>% 
+   separate(pff_SCORE, c("HOME_SCORE", "AWAY_SCORE")) %>%
    mutate(
+      HOME_SCORE = as.numeric(HOME_SCORE),
+      AWAY_SCORE = as.numeric(AWAY_SCORE),
       pff_OFFSUCCESS = case_when(
          pff_OFFSUCCESS == "1G" ~ 1,
          pff_OFFSUCCESS == "2A" ~ 0,
          pff_OFFSUCCESS == "3R" ~ 0),
-      TIMEREMAINING = case_when(
-         pff_QUARTER == 1 
-      )
+      HOME_SCORE = case_when(
+         is.na(HOME_SCORE) ~ 0,
+         TRUE ~ HOME_SCORE
+      ),
+      AWAY_SCORE = case_when(
+         is.na(AWAY_SCORE) ~ 0,
+         abs(HOME_SCORE - AWAY_SCORE) != abs(pff_SCOREDIFFERENTIAL) ~ 
+            as.numeric(paste0(AWAY_SCORE, 0)),
+         TRUE ~ AWAY_SCORE
+      ),
+      OFF_TEAM = ifelse(HOME_SCORE == pff_OFFSCORE, "Home", "Away"),
+      DEF_TEAM = ifelse(HOME_SCORE == pff_DEFSCORE, "Home", "Away")
    ) -> subset_2019
 
 subset_2019 %>%
-   ggplot(aes(x = pff_SCOREDIFFERENTIAL)) +
-   geom_histogram(binwidth = 5)
-   
-subset_2019 %>%
-   filter(!is.na(pff_OFFSUCCESS)) %>%
-   group_by(pff_QUARTER, pff_DOWN) %>%
-   summarize(prob_success = mean(pff_OFFSUCCESS))
+   select(HOME_SCORE, AWAY_SCORE, OFF_TEAM, DEF_TEAM, pff_OFFSCORE, pff_DEFSCORE) %>%
+   View()
+
+
+
+
 
