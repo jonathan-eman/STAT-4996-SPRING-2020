@@ -16,11 +16,9 @@ library(tidyverse)
 data_2019 <- read.csv("2019 PFF All Plays.csv")
 
 # Filter for only plays where team was tied or losing
-data_2019 %>%
-   filter(pff_SCOREDIFFERENTIAL < 0,
-          pff_QUARTER == 4,
-          pff_CLOCK <= 5) %>% 
+data_2019 %>% 
    separate(pff_SCORE, c("HOME_SCORE", "AWAY_SCORE")) %>%
+   separate(pff_CLOCK, c("MINS", "SECS")) %>%
    mutate(
       HOME_SCORE = as.numeric(HOME_SCORE),
       AWAY_SCORE = as.numeric(AWAY_SCORE),
@@ -39,8 +37,12 @@ data_2019 %>%
          TRUE ~ AWAY_SCORE
       ),
       OFF_TEAM = ifelse(HOME_SCORE == pff_OFFSCORE, "Home", "Away"),
-      DEF_TEAM = ifelse(HOME_SCORE == pff_DEFSCORE, "Home", "Away")
-   ) -> subset_2019
+      DEF_TEAM = ifelse(HOME_SCORE == pff_DEFSCORE, "Home", "Away"),
+      TIME_REMAINING = as.numeric(MINS) + as.numeric(SECS)/60
+   ) %>%
+   filter(pff_SCOREDIFFERENTIAL < 0,
+          pff_QUARTER == 4,
+          TIME_REMAINING <= 5) -> subset_2019
 
 subset_2019 %>%
    group_by(pff_GAMEID) %>%
@@ -48,7 +50,9 @@ subset_2019 %>%
    mutate(WINNER = ifelse(HOME_SCORE > AWAY_SCORE, "Home", "Away")) %>%
    select(pff_GAMEID, HOME_SCORE, AWAY_SCORE, WINNER) -> winners_2019
 
-
+### Win probability model
+subset_2019 %>%
+   left_join(winners_2019, by = "pff_GAMEID") %>% View()
 
 
 
