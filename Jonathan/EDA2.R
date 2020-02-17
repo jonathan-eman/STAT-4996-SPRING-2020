@@ -38,7 +38,7 @@ data_2019 %>%
       ),
       OFF_TEAM = ifelse(HOME_SCORE == pff_OFFSCORE, "Home", "Away"),
       DEF_TEAM = ifelse(HOME_SCORE == pff_DEFSCORE, "Home", "Away"),
-      TIME_REMAINING = as.numeric(MINS) + as.numeric(SECS)/60
+      TIME_REMAINING = round(as.numeric(MINS) + as.numeric(SECS)/60, 2)
    ) %>%
    filter(pff_SCOREDIFFERENTIAL < 0,
           pff_QUARTER == 4,
@@ -50,9 +50,15 @@ subset_2019 %>%
    mutate(WINNER = ifelse(HOME_SCORE > AWAY_SCORE, "Home", "Away")) %>%
    select(pff_GAMEID, HOME_SCORE, AWAY_SCORE, WINNER) -> winners_2019
 
+subset_2019 %>%
+   select(pff_GAMEID, pff_QUARTER, TIME_REMAINING, pff_SCOREDIFFERENTIAL, 
+          pff_DISTANCE, pff_FIELDPOSITION, OFF_TEAM, DEF_TEAM, pff_OFFSCORE,
+          pff_DEFSCORE) %>% head()
+
 ### Win probability model
 subset_2019 %>%
-   left_join(winners_2019, by = "pff_GAMEID") %>% View()
+   left_join(winners_2019, by = "pff_GAMEID") %>% 
+   mutate(TEAM_WINS = ifelse(OFF_TEAM == WINNER, 1, 0))
 
 
 
