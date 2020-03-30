@@ -47,14 +47,35 @@ data_2019 %>%
       TIME_REMAINING = round(as.numeric(MINS) + as.numeric(SECS)/60, 2),
       pff_DOWN = as.factor(pff_DOWN),
       pff_QUARTER = as.factor(pff_QUARTER),
-      YDS_TO_END_ZONE = ifelse(pff_FIELDPOSITION < 0,
-                              abs(pff_FIELDPOSITION) + 50,
-                              pff_FIELDPOSITION)
+      START_YDS_TO_END_ZONE = ifelse(pff_FIELDPOSITION < 0,
+                              pff_FIELDPOSITION + 100,
+                              pff_FIELDPOSITION),
+      END_YDS_TO_END_ZONE = ifelse(pff_PLAYENDFIELDPOSITION < 0,
+                                        pff_PLAYENDFIELDPOSITION + 100,
+                                        pff_PLAYENDFIELDPOSITION),
+      YDS_GAINED = START_YDS_TO_END_ZONE - END_YDS_TO_END_ZONE,
+      #AGGRESSIVE_PLAY = case_when(
+         
+      #)
    ) %>%
-   filter(pff_SCOREDIFFERENTIAL < 0,
-          pff_QUARTER = 4,
-          pff_DOWN != 0,
-          TIME_REMAINING <= 10) -> subset_2019
+  #filter(pff_SCOREDIFFERENTIAL < 0,
+   #       pff_QUARTER == 4,
+    #      pff_DOWN != 0) %>%
+   dplyr::select(pff_GAMEID, pff_QUARTER, TIME_REMAINING,
+                 pff_SCOREDIFFERENTIAL, pff_DISTANCE, pff_FIELDPOSITION,
+                 OFF_TEAM, DEF_TEAM, HOME_SCORE, AWAY_SCORE, pff_OFFSCORE,
+                 pff_DEFSCORE, START_YDS_TO_END_ZONE, END_YDS_TO_END_ZONE,
+                 YDS_GAINED, pff_DRIVEENDEVENT, pff_RUNPASS,
+                 pff_TRICKPLAY) -> subset_2019
+
+subset_2019 %>%
+   filter(pff_RUNPASS == "P",
+          pff_TRICKPLAY == 1) %>%
+   ggplot() + geom_histogram(aes(x=YDS_GAINED), binwidth = 3) 
+
+summary(subset_2019$YDS_GAINED)
+
+ggqqplot(subset_2019$YDS_GAINED)
 
 subset_2019 %>%
    group_by(pff_GAMEID) %>%
@@ -63,7 +84,8 @@ subset_2019 %>%
    dplyr::select(pff_GAMEID, HOME_SCORE, AWAY_SCORE, WINNER) -> winners_2019
 
 subset_2019 %>%
-   select(pff_GAMEID, pff_QUARTER, TIME_REMAINING, pff_SCOREDIFFERENTIAL, 
+   dplyr::select(pff_GAMEID, pff_QUARTER, TIME_REMAINING,
+                 pff_SCOREDIFFERENTIAL, 
           pff_DISTANCE, pff_FIELDPOSITION, OFF_TEAM, DEF_TEAM, pff_OFFSCORE,
           pff_DEFSCORE) %>% head()
 
