@@ -17,6 +17,7 @@ library(MASS)
 library(klaR)
 library(ICS)
 library(ISLR)
+library(fitdistrplus)
 
 # Read-in data
 data_2019 <- read.csv("2019 PFF All Plays.csv")
@@ -53,11 +54,11 @@ data_2019 %>%
       END_YDS_TO_END_ZONE = ifelse(pff_PLAYENDFIELDPOSITION < 0,
                                         pff_PLAYENDFIELDPOSITION + 100,
                                         pff_PLAYENDFIELDPOSITION),
-      YDS_GAINED = START_YDS_TO_END_ZONE - END_YDS_TO_END_ZONE,
+      YDS_GAINED = START_YDS_TO_END_ZONE - END_YDS_TO_END_ZONE
       #AGGRESSIVE_PLAY = case_when(
          
       #)
-   ) %>%
+      ) %>%
   #filter(pff_SCOREDIFFERENTIAL < 0,
    #       pff_QUARTER == 4,
     #      pff_DOWN != 0) %>%
@@ -66,16 +67,68 @@ data_2019 %>%
                  OFF_TEAM, DEF_TEAM, HOME_SCORE, AWAY_SCORE, pff_OFFSCORE,
                  pff_DEFSCORE, START_YDS_TO_END_ZONE, END_YDS_TO_END_ZONE,
                  YDS_GAINED, pff_DRIVEENDEVENT, pff_RUNPASS,
-                 pff_TRICKPLAY) -> subset_2019
+                 pff_TRICKPLAY, pff_DEEPPASS) -> subset_2019
 
+### All passes - yards
 subset_2019 %>%
-   filter(pff_RUNPASS == "P",
-          pff_TRICKPLAY == 1) %>%
-   ggplot() + geom_histogram(aes(x=YDS_GAINED), binwidth = 3) 
+   filter(pff_RUNPASS == "P") %>%
+   sample_n(2000) %>%
+   select(YDS_GAINED) -> pass_plays
 
-summary(subset_2019$YDS_GAINED)
+ggplot(pass_plays) +
+   geom_histogram(aes(x=YDS_GAINED, y=..density..), binwidth = 3) +
+   geom_density(aes(x=YDS_GAINED))
 
-ggqqplot(subset_2019$YDS_GAINED)
+emg.mle(pass_plays$YDS_GAINED)
+
+### All runs - yards
+subset_2019 %>%
+   filter(pff_RUNPASS == "R") %>%
+   sample_n(200) %>%
+   select(YDS_GAINED) -> run_plays
+
+ggplot(run_plays) +
+   geom_histogram(aes(x=YDS_GAINED, y=..density..), binwidth = 3) +
+   geom_density(aes(x=YDS_GAINED)) +
+   xlim(c(-20, 40))
+
+emg.mle(run_plays$YDS_GAINED)
+
+### Deep passes - yards
+subset_2019 %>%
+   filter(pff_DEEPPASS == 1) %>%
+   select(YDS_GAINED) -> deep_pass_plays
+
+ggplot(deep_pass_plays) +
+   geom_histogram(aes(x=YDS_GAINED, y=..density..), binwidth = 3) +
+   geom_density(aes(x=YDS_GAINED))
+
+ggplot(deep_pass_plays, aes(sample=YDS_GAINED)) + 
+   stat_qq() + stat_qq_line()
+   
+emg.mle(deep_pass_plays$YDS_GAINED)
+
+mean(deep_pass_plays$YDS_GAINED)
+sd(deep_pass_plays$YDS_GAINED)
+
+### Trick plays - yards
+subset_2019 %>%
+   filter(pff_TRICKPLAY == 1) %>%
+   select(YDS_GAINED) -> trick_plays
+
+ggplot(trick_plays) +
+   geom_histogram(aes(x=YDS_GAINED, y=..density..), binwidth = 3) +
+   geom_density(aes(x=YDS_GAINED))
+
+ggplot(deep_pass_plays, aes(sample=YDS_GAINED)) + 
+   stat_qq() + stat_qq_line()
+
+emg.mle((deep_pass_plays %>% sample_n(200))$YDS_GAINED)
+
+### 
+
+
+
 
 subset_2019 %>%
    group_by(pff_GAMEID) %>%
@@ -94,41 +147,17 @@ subset_2019 %>%
    mutate(TEAM_WINS = as.factor(ifelse(
       OFF_TEAM == WINNER, 1, 0))) -> join_2019
 
-set.seed(12211999)
+subset_2019 %>%
+   filter(pff_RUNPASS %in% c("R", "P")) %>%
+   group_by(pff_RUNPASS) %>%
+   summarize(prop = n()/nrow(subset_2019 %>%
+                                filter(pff_RUNPASS %in% c("R", "P"))))
 
-# split data
-sample.data <- sample.int(nrow(join_2019), floor(.50*nrow(join_2019)),
-                          replace = F)
-train <- join_2019[sample.data, ]
-test <- join_2019[-sample.data, ] 
+# for normal play, prob of pass is .528, run is .472
+subset_2019 %>%
+   filter(pff_RUNPASS %in% c("R", "P")) %>%
+   group_by(pff_RUNPASS, pff_TRICKPLAY) %>%
+   summarize(prop = n()/nrow(subset_2019 %>%
+                                filter(pff_RUNPASS %in% c("R", "P"))))
 
-
-### Win probability model
-
-glm(data = train, formula = TEAM_WINS ~ pff_QUARTER + pff_DOWN +
-    TIME_REMAINING + pff_DISTANCE + YDS_TO_END_ZONE + pff_SCOREDIFFERENTIAL,
-    family = "binomial") -> win_prob_model
-
-summary(win_prob_model)
-
-# get predictions and create ROC curve
-preds_logistic <- predict(win_prob_model, newdata=test, type = "response")
-
-rates_logistic <- prediction(preds_logistic, test$TEAM_WINS)
-
-roc_logistic <- performance(rates_logistic, measure = "tpr", x.measure = "fpr")
-
-plot(roc_logistic, main="ROC Curve")
-lines(x = c(0,1), y = c(0,1), col="red")
-
-# confusion matrix and overall error rate
-confusion.mat.logistic <- table(test$TEAM_WINS, preds_logistic > 0.5)
-
-overall.error.logistic <- (confusion.mat.logistic[1,2] + 
-                              confusion.mat.logistic[2,1]) / 
-   sum(confusion.mat.logistic) 
-
-# Overall error rate with logistic regression is 13.7%
-
-
-
+# for aggressive: ?

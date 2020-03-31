@@ -10,45 +10,68 @@ full_drive <- function(S1){
   k <- 0 #this allows us to gracefully kick out of a bad while loop. Not needed in production
   #but in case you miscode something while running a while loop, it's always good to not have to kill the kernel.
   
-  drive_result <- list(score = NA, end_yard = NA) #we don't really need to declare this here, I'm just being inefficient
+  drive_result <- list(score = NA, end_yard = NA, end_time = NA)
   
   #this is the meat of the drive.  Basically, we either score or run out of downs.  NOthing else.
-  while(is_not_done){
-    
-    y <- floor(rnorm(1, mean=3, sd=1)) #how many yards do you gain.  This is a silly way to sample yards.  Should
-    #definitely be replaced with a smarter sampling function, and one that is
-    #estimated from the data!
-
-    #print current state
-    print_status(S1, y)
-    
-    C_new <- S1$C - y
-    A_new <- S1$A - y
-    if(A_new <= 0){
-      B_new <- 1
-      A_new <- 10
-    }else{
-      B_new <- S1$B + 1
-    }
-    if(C_new <=0){
-      is_not_done <- FALSE
-      drive_result$score <- 7
-    }else if(B_new == 5){
-      is_not_done <- FALSE
-      drive_result$end_yard <- C_new
-      turnover_on_downs_print_status(C_new)
-    }else{
-      k <- k+1
-      S1$A <- A_new
-      S1$B <- B_new
-      S1$C <- C_new
+  while(is_not_done) {
+    if(F = 0) {
+       if(C != 4 & A > 0) { # if not 4th down and >0 yards to end zone
+          play_type_num <- sample.int(2, size = 1, prob = c(.528, .472))
+          play_type <- c("P", "R")[play_type_num]
+          
+          if(play_type == "P") {
+             yards_gained = remg(1, -2, 3, .1)
+             time_elapsed = rnorm(1, 20/60, 8/60)
+          } else {
+             yards_gained = remg(1, -2.5, 2, .05)
+             time_elapsed = rnorm(1, 12/60, 6/60)
+          }
+          
+          A_new = A-yards_gained
+          B_new = B-round(time_elapsed, 2)
+          C_new = C-yards_gained
+          D_new = ifelse(C_new <= 0, 1, C+1)
+          
+          if (D_new == 1) { #if first down, reset YTG to 10
+             C_new = 10
+          }
+          
+          k <- k+1
+          S1$A <- A_new
+          S1$B <- B_new
+          S1$C <- C_new
+          S1$D <- D_new
+          
+       } else if (C == 4 & A > 0) {
+          if (A <= 30) { #if within 30 yards of end zone, simulate field goal
+             field_goal <- sample.int(2, size = 1, prob = c(.7, .3))
+             if (field_goal == 1) {
+                is_not_done <- FALSE
+                drive_result$score <- 3
+             } else {
+                is_not_done <- FALSE
+                drive_result$end_yard <- A
+             }
+             drive_result$end_time <- B-(5/60)
+          } else { #or else simulate punt
+             punt_yards <- rnorm(1, 35, 3)
+             is_not_done <- FALSE
+             drive_result$end_yard <- A + punt_yards
+             drive_result$end_time <- B-(10/60)
+          }
       
-    }
-    if(k > 100){
-      is_not_done <- FALSE
-      drive_result$end_yard <- C_new
-    }
+       } else if (A <= 0) {
+          is_not_done <- FALSE
+          drive_result$score <- 7
+       } 
+          
+       if(k > 100){
+         is_not_done <- FALSE
+         drive_result$end_yard <- C_new
+       }
+       }
   }
+  
   drive_result #return drive result which is (score, end_yard).  One of those will always be NA.
 }
 
