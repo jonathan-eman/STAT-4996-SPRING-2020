@@ -18,6 +18,7 @@ library(klaR)
 library(ICS)
 library(ISLR)
 library(fitdistrplus)
+library(emg)
 
 # Read-in data
 data_2019 <- read.csv("2019 PFF All Plays.csv")
@@ -69,6 +70,8 @@ data_2019 %>%
                  YDS_GAINED, pff_DRIVEENDEVENT, pff_RUNPASS,
                  pff_TRICKPLAY, pff_DEEPPASS) -> subset_2019
 
+
+
 ### All passes - yards
 subset_2019 %>%
    filter(pff_RUNPASS == "P") %>%
@@ -84,7 +87,6 @@ emg.mle(pass_plays$YDS_GAINED)
 ### All runs - yards
 subset_2019 %>%
    filter(pff_RUNPASS == "R") %>%
-   sample_n(200) %>%
    select(YDS_GAINED) -> run_plays
 
 ggplot(run_plays) +

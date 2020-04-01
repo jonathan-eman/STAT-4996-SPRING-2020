@@ -27,7 +27,7 @@ source('run_to_score.R')
 S <- list(A=floor(rnorm(1, 60, 10)),
           B=10,
           C=10,
-          D=1,
+          D=10,
           E=-7,
           F=1) 
 
