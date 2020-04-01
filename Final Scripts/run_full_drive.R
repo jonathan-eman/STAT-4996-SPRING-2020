@@ -10,20 +10,25 @@ full_drive <- function(A, B, C, D, E, F){
   k <- 0 #this allows us to gracefully kick out of a bad while loop. Not needed in production
   #but in case you miscode something while running a while loop, it's always good to not have to kill the kernel.
   
-  drive_result <- list(score = NA, end_yard = NA, end_time = NA)
+  drive_result <- list(event = NA, score = NA, end_yard = NA, end_time = NA)
   
   #this is the meat of the drive.  Basically, we either score or run out of downs.  NOthing else.
   while(is_not_done) {
+    if(B <= 0) {
+       print("Time is up")
+       drive_result$score <- NA
+       drive_result$end_yard <- NA
+       drive_result$end_time <- 0
+       drive_result$event <- "End of Game"
+       is_not_done <- FALSE
+    }
+     
     if(F == 0) {
-       if (C != 4 & A > 0) { # if not 4th down and >0 yards to end zone
+       if (D != 4 & A > 0) { # if not 4th down and >0 yards to end zone
           play_type_num <- sample.int(2, size = 1, prob = c(.528, .472))
           play_type <- c("P", "R")[play_type_num]
           
           if(play_type == "P") {
-             sample.int(2, size = 1, prob = c(.8, .2))
-             
-             glm(Score ~ Yards, family = "binomial")
-             
              yards_gained = remg(1, -2, 3, .1)
              time_elapsed = rnorm(1, 20/60, 8/60)
           } else {
@@ -31,47 +36,50 @@ full_drive <- function(A, B, C, D, E, F){
              time_elapsed = rnorm(1, 12/60, 6/60)
           }
           
-          A = A-yards_gained
-          B = B-round(time_elapsed, 2)
-          C = C-yards_gained
-          D = ifelse(C_new <= 0, 1, C+1)
+          A = A - yards_gained
+          B = B - round(time_elapsed, 2)
+          C = C - yards_gained
+          D = ifelse(C <= 0, 1, C + 1)
           
           if (D == 1) { #if first down, reset YTG to 10
              C = 10
           }
           
-          k <- k+1
-          # S1$A <- A_new
-          # S1$B <- B_new
-          # S1$C <- C_new
-          # S1$D <- D_new
+          k <- k + 1
           
-       } else if (C == 4 & A > 0) {
+       } else if (D == 4 & A > 0) {
           if (A <= 30) { #if within 30 yards of end zone, simulate field goal
              field_goal <- sample.int(2, size = 1, prob = c(.7, .3))
              if (field_goal == 1) {
-                is_not_done <- FALSE
                 drive_result$score <- 3
+                drive_result$event <- "FG"
              } else {
-                is_not_done <- FALSE
                 drive_result$end_yard <- A
+                drive_result$event <- "Missed FG"
              }
              drive_result$end_time <- B - (5/60)
+             is_not_done <- FALSE
           } else { #or else simulate punt
              punt_yards <- rnorm(1, 41, 9)
+             drive_result$end_yard <- ifelse(A - punt_yards <= 0,
+                                             5,
+                                             A - punt_yards)
+             drive_result$end_time <- B - (10/60)
+             drive_result$event <- "Punt"
              is_not_done <- FALSE
-             drive_result$end_yard <- A + punt_yards
-             drive_result$end_time <- B-(10/60)
           }
       
        } else if (A <= 0) {
-          is_not_done <- FALSE
           drive_result$score <- 7
+          drive_result$end_time <- B - (10/60)
+          drive_result$event <- "Touchdown"
+          is_not_done <- FALSE
        } 
           
        if(k > 100){
-         is_not_done <- FALSE
          drive_result$end_yard <- C
+         drive_result$end_time <- B - (10/60)
+         is_not_done <- FALSE
        }
        
     } else if (F == 1) {
@@ -93,64 +101,60 @@ full_drive <- function(A, B, C, D, E, F){
              time_elapsed = rnorm(1, 12/60, 6/60)
           }
           
-          A_new = A - yards_gained
-          B_new = B - round(time_elapsed, 2)
-          C_new = C - yards_gained
-          D_new = ifelse(C_new <= 0, 1, C+1)
+          A = A - yards_gained
+          B = B - round(time_elapsed, 2)
+          C = C - yards_gained
+          D = ifelse(C_new <= 0, 1, C+1)
           
-          if (D_new == 1) { #if first down, reset YTG to 10
-             C_new = 10
+          if (D == 1) { #if first down, reset YTG to 10
+             C = 10
           }
           
           k <- k+1
-          # S1$A <- A_new
-          # S1$B <- B_new
-          # S1$C <- C_new
-          # S1$D <- D_new
           
        } else if (A <= 0) {
-          is_not_done <- FALSE
           drive_result$score <- 7
           drive_result$end_time <- B
-       } else if (D == 5) { # turnover on downs
+          drive_result$event <- "Touchdown"
           is_not_done <- FALSE
+       } else if (D == 5) { # turnover on downs
           drive_result$end_yard <- A
           drive_result$end_time <- B
+          drive_result$event <- "Turnover on Downs"
+          is_not_done <- FALSE
        } 
        
        if(k > 100){
+          drive_result$end_yard <- A
           is_not_done <- FALSE
-          drive_result$end_yard <- C_new
        }
    }
   }
   print(drive_result)
-  return(drive_result)
-
 }
 
-#helper function that prints current state in pretty way
-print_status <- function(S1, y){
-  if(S1$C>50){
-    print(paste0("YTG: ", S1$A, " Down: ", S1$B, " LOS: own ", 100-S1$C, " Yards gained: ", y)) #the states are not saved!
-  }else if(S1$C==50){
-    print(paste0("YTG: ", S1$A, " Down: ", S1$B, " LOS: ", S1$C, " Yards gained: ", y))
-  }else if(S1$C<50 & S1$C>20){
-    print(paste0("YTG: ", S1$A, " Down: ", S1$B, " LOS: opponent's ", S1$C, " Yards gained: ", y))
-  }else{
-    print(paste0("RED ZONE ALERT!!! YTG: ", S1$A, " Down: ", S1$B, " LOS: opponent's ", S1$C, " Yards gained: ", y))
-  }
-}
-
-turnover_on_downs_print_status <- function(y){
-  #y is in terms of your team's last possession.  So to get it in terms of your opponents position
-  #we need to take 100-y
-  x <- 100-y
-  if(x>50){
-    print(paste0("Sorry, you have lost possession on downs.  Your opponent gets the ball on their own ", 100-x, " yard line."))
-  }else if(x==50){
-    print(paste0("Sorry, you have lost possession on downs.  Your opponent gets the ball on the ", x, " yard line."))
-  }else{
-    print(paste0("Sorry, you have lost possession on downs.  Your opponent gets the ball on your ", x, " yard line."))
-  }
-}
+# #helper function that prints current state in pretty way
+# print_status <- function(S1, y){
+#   if(S1$C>50){
+#     print(paste0("YTG: ", S1$A, " Down: ", S1$B, " LOS: own ", 100-S1$C, " Yards gained: ", y)) #the states are not saved!
+#   }else if(S1$C==50){
+#     print(paste0("YTG: ", S1$A, " Down: ", S1$B, " LOS: ", S1$C, " Yards gained: ", y))
+#   }else if(S1$C<50 & S1$C>20){
+#     print(paste0("YTG: ", S1$A, " Down: ", S1$B, " LOS: opponent's ", S1$C, " Yards gained: ", y))
+#   }else{
+#     print(paste0("RED ZONE ALERT!!! YTG: ", S1$A, " Down: ", S1$B, " LOS: opponent's ", S1$C, " Yards gained: ", y))
+#   }
+# }
+# 
+# turnover_on_downs_print_status <- function(y){
+#   #y is in terms of your team's last possession.  So to get it in terms of your opponents position
+#   #we need to take 100-y
+#   x <- 100-y
+#   if(x>50){
+#     print(paste0("Sorry, you have lost possession on downs.  Your opponent gets the ball on their own ", 100-x, " yard line."))
+#   }else if(x==50){
+#     print(paste0("Sorry, you have lost possession on downs.  Your opponent gets the ball on the ", x, " yard line."))
+#   }else{
+#     print(paste0("Sorry, you have lost possession on downs.  Your opponent gets the ball on your ", x, " yard line."))
+#   }
+# }

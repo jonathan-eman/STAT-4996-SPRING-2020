@@ -18,18 +18,18 @@ source('run_to_score.R')
 # A is starting field position of play (ranges from 0 to 100 (so your own 25 would be 75. 0 would be a touchdown))
 # B is time remaining in quarter
 # C is yards to first down
-# D is Down number
-# E is score differential
+# D is down number
+# E is starting score differential
 # F is aggressive play indication
 
 # Assume that YG comes from the same simple distribution- this is one of the major changes you would want to make!
 
-S <- list(A=floor(rnorm(1, 60, 10)),
-          B=10,
-          C=10,
-          D=10,
-          E=-7,
-          F=1) 
+A=floor(rnorm(1, 60, 10)) 
+B=10
+C=10
+D=1
+E=-7
+F=1
 
 #starting state- better: simulate a kickoff, but this will do for now
 
