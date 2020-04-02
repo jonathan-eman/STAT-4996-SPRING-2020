@@ -27,9 +27,9 @@ library(emg)
 # F is aggressive play indication
 
 # Losing by 3, non-aggressive
-monte_carlo <- replicate(10,
+monte_carlo <- replicate(100,
                          game_simulator(A=floor(rnorm(1, 60, 10)), 
-                                        B=10, 
+                                        B=15, 
                                         C=10, 
                                         D=1, 
                                         E=-3, 

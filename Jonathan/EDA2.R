@@ -72,60 +72,85 @@ data_2019 %>%
 
 
 
-### All passes - yards
+### All passes
 subset_2019 %>%
-   filter(pff_RUNPASS == "P") %>%
-   sample_n(2000) %>%
-   select(YDS_GAINED) -> pass_plays
+   filter(pff_RUNPASS == "P", pff_DEEPPASS == 0) %>%
+   dplyr::select(YDS_GAINED) -> passes
 
-ggplot(pass_plays) +
+passes %>%
+   filter(YDS_GAINED >= 0) -> positive_passes
+
+passes %>%
+   filter(YDS_GAINED < 0) %>%
+   mutate(YDS_LOST = abs(YDS_GAINED)) -> negative_passes
+
+ggplot(positive_passes) +
    geom_histogram(aes(x=YDS_GAINED, y=..density..), binwidth = 3) +
    geom_density(aes(x=YDS_GAINED))
 
-emg.mle(pass_plays$YDS_GAINED)
+ggplot(negative_passes) +
+   geom_histogram(aes(x=YDS_LOST, y=..density..), binwidth = 3) +
+   geom_density(aes(x=YDS_LOST))
 
-### All runs - yards
+### All runs 
 subset_2019 %>%
    filter(pff_RUNPASS == "R") %>%
-   select(YDS_GAINED) -> run_plays
+   dplyr::select(YDS_GAINED) -> runs
 
-ggplot(run_plays) +
+runs %>%
+   filter(YDS_GAINED >= 0) -> positive_runs
+
+runs %>%
+   filter(YDS_GAINED < 0) %>%
+   mutate(YDS_LOST = abs(YDS_GAINED)) -> negative_runs
+
+ggplot(positive_runs) +
    geom_histogram(aes(x=YDS_GAINED, y=..density..), binwidth = 3) +
-   geom_density(aes(x=YDS_GAINED)) +
-   xlim(c(-20, 40))
+   geom_density(aes(x=YDS_GAINED))
 
-emg.mle(run_plays$YDS_GAINED)
+ggplot(negative_runs) +
+   geom_histogram(aes(x=YDS_LOST, y=..density..), binwidth = 3) +
+   geom_density(aes(x=YDS_LOST))
 
-### Deep passes - yards
+### Deep passes 
 subset_2019 %>%
    filter(pff_DEEPPASS == 1) %>%
-   select(YDS_GAINED) -> deep_pass_plays
+   dplyr::select(YDS_GAINED) -> deep_passes
 
-ggplot(deep_pass_plays) +
+deep_passes %>%
+   filter(YDS_GAINED >= 0) -> positive_deep_passes
+
+deep_passes %>%
+   filter(YDS_GAINED < 0) %>%
+   mutate(YDS_LOST = abs(YDS_GAINED)) -> negative_deep_passes
+
+ggplot(positive_deep_passes) +
    geom_histogram(aes(x=YDS_GAINED, y=..density..), binwidth = 3) +
    geom_density(aes(x=YDS_GAINED))
 
-ggplot(deep_pass_plays, aes(sample=YDS_GAINED)) + 
-   stat_qq() + stat_qq_line()
-   
-emg.mle(deep_pass_plays$YDS_GAINED)
+ggplot(negative_deep_passes) +
+   geom_histogram(aes(x=YDS_LOST, y=..density..), binwidth = 3) +
+   geom_density(aes(x=YDS_LOST))
 
-mean(deep_pass_plays$YDS_GAINED)
-sd(deep_pass_plays$YDS_GAINED)
-
-### Trick plays - yards
+### Trick plays runs
 subset_2019 %>%
-   filter(pff_TRICKPLAY == 1) %>%
-   select(YDS_GAINED) -> trick_plays
+   filter(pff_TRICKPLAY == 1, pff_RUNPASS == "R") %>%
+   dplyr::select(YDS_GAINED) -> trick_plays
 
-ggplot(trick_plays) +
+trick_plays %>%
+   filter(YDS_GAINED >= 0) -> positive_trick_plays
+ 
+trick_plays %>%
+   filter(YDS_GAINED < 0) %>%
+   mutate(YDS_LOST = abs(YDS_GAINED)) -> negative_trick_plays
+
+ggplot(positive_trick_plays) +
    geom_histogram(aes(x=YDS_GAINED, y=..density..), binwidth = 3) +
    geom_density(aes(x=YDS_GAINED))
 
-ggplot(deep_pass_plays, aes(sample=YDS_GAINED)) + 
-   stat_qq() + stat_qq_line()
-
-emg.mle((deep_pass_plays %>% sample_n(200))$YDS_GAINED)
+ggplot(negative_trick_plays) +
+   geom_histogram(aes(x=YDS_LOST, y=..density..), binwidth = 3) +
+   geom_density(aes(x=YDS_LOST))
 
 ### 
 

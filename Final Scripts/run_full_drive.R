@@ -60,9 +60,9 @@ full_drive <- function(A, B, C, D, E, F){
              drive_result$end_time <- B - (5/60)
              is_not_done <- FALSE
           } else { #or else simulate punt
-             punt_yards <- rnorm(1, 41, 9)
+             punt_yards <- rnorm(1, 40.5, 9.7)
              drive_result$end_yard <- ifelse(A - punt_yards <= 0,
-                                             5,
+                                             25,
                                              A - punt_yards)
              drive_result$end_time <- B - (10/60)
              drive_result$event <- "Punt"
@@ -84,7 +84,7 @@ full_drive <- function(A, B, C, D, E, F){
        
     } else if (F == 1) {
        if (A > 0) { # if >0 yards to end zone
-          play_type_num <- sample.int(4, size = 1, prob = c(.3, .3, .2, .2))
+          play_type_num <- sample.int(4, size = 1, prob = c(.4, .25, .25, .1))
           play_type <- c("P", "R", "DP", "TPR")[play_type_num]
           
           if (play_type == "P") {
@@ -125,7 +125,8 @@ full_drive <- function(A, B, C, D, E, F){
        } 
        
        if(k > 100){
-          drive_result$end_yard <- A
+          drive_result$end_yard <- C
+          drive_result$end_time <- B - (10/60)
           is_not_done <- FALSE
        }
    }

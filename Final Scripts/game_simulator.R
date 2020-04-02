@@ -22,10 +22,11 @@ game_simulator <- function(A, B, C, D, E, F) {
          # other team gets the ball
          team <- (team+1)%%2
          
-         A <- 80 # assume every kickoff is a touchback
+         A <- 75 # assume every kickoff is a touchback
          B <- result_drive$end_time - .2 # assume kickoff takes 12 seconds
          C <- 10
          D <- 1
+         F <- ifelse(team == 1, 0, F) # Team 1 is always non-aggressive
          
       } else {
          # give the other team the ball where the previous team left off
@@ -35,10 +36,17 @@ game_simulator <- function(A, B, C, D, E, F) {
          B <- result_drive$end_time
          C <- 10
          D <- 1
+         F <- ifelse(team == 1, 0, F)
          
          # k <- k+1 #play counter in case things get out of hand.
       }
+      
+      # Change to aggressive if there's less than 5 minutes left
+      # if (B <= 5 & team == 0) {
+      #    F <- 1
+      # }
    }
+   
    print(paste0("The final score is: Team 0 - ", score[1], ", Team 1 - ",
                 score[2]))
    
