@@ -104,7 +104,7 @@ full_drive <- function(A, B, C, D, E, F){
           A = A - yards_gained
           B = B - round(time_elapsed, 2)
           C = C - yards_gained
-          D = ifelse(C_new <= 0, 1, C+1)
+          D = ifelse(C <= 0, 1, C+1)
           
           if (D == 1) { #if first down, reset YTG to 10
              C = 10

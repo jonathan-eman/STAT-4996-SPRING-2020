@@ -41,7 +41,6 @@ game_simulator <- function(A, B, C, D, E, F) {
    }
    print(paste0("The final score is: Team 0 - ", score[1], ", Team 1 - ",
                 score[2]))
-   return(score)
+   
+  return(c("Team_0" = score[[1]], "Team_1" = score[[2]]))
 }
-
-game_simulator(A, B, C, D, E, F)
