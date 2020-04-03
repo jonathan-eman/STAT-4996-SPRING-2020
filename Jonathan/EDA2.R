@@ -68,9 +68,8 @@ data_2019 %>%
                  OFF_TEAM, DEF_TEAM, HOME_SCORE, AWAY_SCORE, pff_OFFSCORE,
                  pff_DEFSCORE, START_YDS_TO_END_ZONE, END_YDS_TO_END_ZONE,
                  YDS_GAINED, pff_DRIVEENDEVENT, pff_RUNPASS,
-                 pff_TRICKPLAY, pff_DEEPPASS) -> subset_2019
-
-
+                 pff_TRICKPLAY, pff_DEEPPASS, pff_DRIVEPLAY,
+                 pff_DRIVEENDPLAYNUMBER) -> subset_2019
 
 ### All passes
 subset_2019 %>%
@@ -154,9 +153,6 @@ ggplot(negative_trick_plays) +
 
 ### 
 
-
-
-
 subset_2019 %>%
    group_by(pff_GAMEID) %>%
    slice(n()) %>%
@@ -184,7 +180,22 @@ subset_2019 %>%
 subset_2019 %>%
    filter(pff_RUNPASS %in% c("R", "P")) %>%
    group_by(pff_RUNPASS, pff_TRICKPLAY) %>%
-   summarize(prop = n()/nrow(subset_2019 %>%
+   summarize(prop = n()/nrow(subset_2019 %>% 
                                 filter(pff_RUNPASS %in% c("R", "P"))))
 
-# for aggressive: ?
+# Field goals ----
+subset_2019 %>% 
+   filter(pff_DRIVEENDEVENT %in% c("FIELD GOAL", "MISSED FG"),
+          pff_DRIVEENDPLAYNUMBER == pff_DRIVEPLAY) %>%
+   dplyr::select(START_YDS_TO_END_ZONE, pff_DRIVEENDEVENT) %>%
+   mutate(FIELD_GOAL_MADE = as.numeric(pff_DRIVEENDEVENT == "FIELD GOAL")) ->
+   field_goals
+
+glm(FIELD_GOAL_MADE ~ START_YDS_TO_END_ZONE, data = field_goals,
+    family = "binomial") -> field_goal_probability_model
+
+summary(field_goal_probability_model)
+
+field_goal_probability <- function(x) {
+   exp(2.410322 - 0.064872*x) / (1 + exp(2.410322 - 0.064872*x))
+}

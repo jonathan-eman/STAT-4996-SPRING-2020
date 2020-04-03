@@ -1,6 +1,7 @@
 setwd("~/R/STAT 4996/STAT-4996-SPRING-2020/Final Scripts")
 source('run_full_drive.R')
 source('game_simulator.R')
+source('field_goal_probability.R')
 
 library(tidyverse)
 library(emg)

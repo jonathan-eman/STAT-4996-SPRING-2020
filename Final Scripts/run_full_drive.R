@@ -49,7 +49,8 @@ full_drive <- function(A, B, C, D, E, F){
           
        } else if (D == 4 & A > 0) {
           if (A <= 30) { #if within 30 yards of end zone, simulate field goal
-             field_goal <- sample.int(2, size = 1, prob = c(.7, .3))
+             prob <- field_goal_probability(A)
+             field_goal <- sample.int(2, size = 1, prob = c(prob, 1 - prob))
              if (field_goal == 1) {
                 drive_result$score <- 3
                 drive_result$event <- "FG"
