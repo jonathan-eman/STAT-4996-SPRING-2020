@@ -85,21 +85,46 @@ full_drive <- function(A, B, C, D, E, F){
        
     } else if (F == 1) {
        if (A > 0) { # if >0 yards to end zone
-          play_type_num <- sample.int(4, size = 1, prob = c(.4, .25, .25, .1))
+          play_type_num <- sample.int(4, size = 1,
+                                      prob = c(.4, .25, .25, .1))
           play_type <- c("P", "R", "DP", "TPR")[play_type_num]
           
           if (play_type == "P") {
              yards_gained = remg(1, -2, 3, .1)
-             time_elapsed = rnorm(1, 20/60, 8/60) } 
-          else if (play_type == "R") {
+             time_elapsed = rnorm(1, 20/60, 8/60) 
+             
+         } else if (play_type == "R") {
              yards_gained = remg(1, -2, 3, .1)
-             time_elapsed = rnorm(1, 20/60, 8/60) } 
-          else if (play_type == "DP") {
-             yards_gained = remg(1, -2, 3, .1)
-             time_elapsed = rnorm(1, 20/60, 8/60) }
-          else {
-             yards_gained = remg(1, -2.5, 2, .05)
-             time_elapsed = rnorm(1, 12/60, 6/60)
+             time_elapsed = rnorm(1, 12/60, 6/60) 
+             
+         } else if (play_type == "DP") {
+            int <- sample.int(3, size = 1, 
+                              prob = c(.412, .572, .016))
+            pos_neg <- c("POS", "0", "NEG")[int]
+            if (pos_neg == "POS") {
+               yards_gained = rburr(1, shape1 = 2.7031, shape2 = 2.6202,
+                                    rate = .0225) 
+            } else if (pos_neg == "NEG") {
+               yards_gained = -rweibull(1, shape = 2.3326, scale = 11.1046) 
+            } else {
+               yards_gained = 0 
+            }
+            
+             time_elapsed = rnorm(1, 20/60, 8/60) 
+            
+         } else if (play_type == "TPR") {
+             int <- sample.int(2, size = 1, 
+                                   prob = c(.85, .15))
+             pos_neg <- c("POS", "NEG")[int]
+             if (pos_neg == "POS") {
+                yards_gained = rlnorm(1, meanlog = 1.4656, sdlog = .9465) 
+            } else if (pos_neg == "NEG") {
+                yards_gained = -rlnorm(1, meanlog = 1.0617, sdlog = .8847) 
+            } else {
+                yards_gained = 0 
+            }
+             
+             time_elapsed = rnorm(1, 15/60, 7/60)
           }
           
           A = A - yards_gained
@@ -111,7 +136,7 @@ full_drive <- function(A, B, C, D, E, F){
              C = 10
           }
           
-          k <- k+1
+          k <- k + 1
           
        } else if (A <= 0) {
           drive_result$score <- 7

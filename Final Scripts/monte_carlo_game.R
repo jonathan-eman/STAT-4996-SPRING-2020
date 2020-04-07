@@ -33,8 +33,8 @@ monte_carlo <- replicate(100,
                                         B=15, 
                                         C=10, 
                                         D=1, 
-                                        E=-3, 
-                                        F=0))
+                                        E=-7, 
+                                        F=1))
 
 as.data.frame(t(monte_carlo)) %>%
    mutate(win = Team_0 > Team_1) %>%

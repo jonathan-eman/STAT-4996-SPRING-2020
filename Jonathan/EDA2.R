@@ -11,14 +11,15 @@
 setwd("~/R/STAT 4996")
 
 library(tidyverse)
-library(ggcorrplot)
-library(ROCR)
-library(MASS)
-library(klaR)
-library(ICS)
-library(ISLR)
+# library(ggcorrplot)
+# library(ROCR)
+# library(MASS)
+# library(klaR)
+# library(ICS)
+# library(ISLR)
 library(fitdistrplus)
 library(emg)
+library(actuar)
 
 # Read-in data
 data_2019 <- read.csv("2019 PFF All Plays.csv")
@@ -71,7 +72,7 @@ data_2019 %>%
                  pff_TRICKPLAY, pff_DEEPPASS, pff_DRIVEPLAY,
                  pff_DRIVEENDPLAYNUMBER) -> subset_2019
 
-### All passes
+### All passes ----
 subset_2019 %>%
    filter(pff_RUNPASS == "P", pff_DEEPPASS == 0) %>%
    dplyr::select(YDS_GAINED) -> passes
@@ -91,7 +92,7 @@ ggplot(negative_passes) +
    geom_histogram(aes(x=YDS_LOST, y=..density..), binwidth = 3) +
    geom_density(aes(x=YDS_LOST))
 
-### All runs 
+### All runs ----
 subset_2019 %>%
    filter(pff_RUNPASS == "R") %>%
    dplyr::select(YDS_GAINED) -> runs
@@ -111,13 +112,16 @@ ggplot(negative_runs) +
    geom_histogram(aes(x=YDS_LOST, y=..density..), binwidth = 3) +
    geom_density(aes(x=YDS_LOST))
 
-### Deep passes 
+### Deep passes ----
 subset_2019 %>%
    filter(pff_DEEPPASS == 1) %>%
    dplyr::select(YDS_GAINED) -> deep_passes
 
 deep_passes %>%
-   filter(YDS_GAINED >= 0) -> positive_deep_passes
+   filter(YDS_GAINED > 0) -> positive_deep_passes
+
+deep_passes %>%
+   filter(YDS_GAINED == 0) -> neutral_deep_passes
 
 deep_passes %>%
    filter(YDS_GAINED < 0) %>%
@@ -131,17 +135,64 @@ ggplot(negative_deep_passes) +
    geom_histogram(aes(x=YDS_LOST, y=..density..), binwidth = 3) +
    geom_density(aes(x=YDS_LOST))
 
-### Trick plays runs
+ggplot(negative_deep_passes, aes(sample=YDS_LOST)) + stat_qq() + stat_qq_line()
+
+### Fit dist for positive deep passes
+plotdist(positive_deep_passes$YDS_GAINED, histo = TRUE, demp = TRUE)
+
+fit_w  <- fitdist(positive_deep_passes$YDS_GAINED, "weibull")
+fit_g <- fitdist(positive_deep_passes$YDS_GAINED, "gamma")
+fit_ln <- fitdist(positive_deep_passes$YDS_GAINED, "lnorm")
+fit_B  <- fitdist(positive_deep_passes$YDS_GAINED, "burr",
+                  start = list(shape1 = 0.3, shape2 = 1, rate = 1))
+
+plot.legend <- c("weibull", "gamma", "lognormal", "burr")
+denscomp(list(fit_w, fit_g, fit_ln, fit_B),
+         legendtext = plot.legend)
+
+cdfcomp(list(fit_w, fit_g, fit_ln, fit_B),
+        legendtext = plot.legend)
+
+gofstat(list(fit_w, fit_g, fit_ln, fit_B), 
+        fitnames = c("Weibull", "gamma", "lnorm", "burr"))
+
+ests <- bootdist(fit_B, niter = 1e3)
+summary(ests)
+
+
+
+### Fit dist for negative trick plays
+plotdist(negative_deep_passes$YDS_LOST, histo = TRUE, demp = TRUE)
+
+fit_w  <- fitdist(negative_deep_passes$YDS_LOST, "weibull")
+fit_g <- fitdist(negative_deep_passes$YDS_LOST, "gamma")
+fit_ln <- fitdist(negative_deep_passes$YDS_LOST, "lnorm")
+fit_exp <- fitdist(negative_deep_passes$YDS_LOST, "exp")
+
+par(mfrow=c(1,1))
+plot.legend <- c("Weibull", "gamma", "lognormal", "exponential")
+denscomp(list(fit_w, fit_g, fit_ln, fit_exp),
+         legendtext = plot.legend)
+
+gofstat(list(fit_w, fit_g, fit_ln, fit_exp), 
+        fitnames = c("Weibull", "gamma", "lnorm", "exp"))
+
+ests <- bootdist(fit_w, niter = 1e3)
+summary(ests)
+
+
+# Trick plays runs ----
 subset_2019 %>%
    filter(pff_TRICKPLAY == 1, pff_RUNPASS == "R") %>%
    dplyr::select(YDS_GAINED) -> trick_plays
 
 trick_plays %>%
-   filter(YDS_GAINED >= 0) -> positive_trick_plays
+   filter(YDS_GAINED > 0) -> positive_trick_plays
  
 trick_plays %>%
    filter(YDS_GAINED < 0) %>%
-   mutate(YDS_LOST = abs(YDS_GAINED)) -> negative_trick_plays
+   mutate(YDS_LOST = abs(YDS_GAINED)) %>%
+   dplyr::select(YDS_LOST) -> negative_trick_plays
 
 ggplot(positive_trick_plays) +
    geom_histogram(aes(x=YDS_GAINED, y=..density..), binwidth = 3) +
@@ -151,7 +202,56 @@ ggplot(negative_trick_plays) +
    geom_histogram(aes(x=YDS_LOST, y=..density..), binwidth = 3) +
    geom_density(aes(x=YDS_LOST))
 
-### 
+### Fit dist for positive trick plays
+plotdist(positive_trick_plays$YDS_GAINED, histo = TRUE, demp = TRUE)
+
+fit_w  <- fitdist(positive_trick_plays$YDS_GAINED, "weibull")
+fit_g <- fitdist(positive_trick_plays$YDS_GAINED, "gamma")
+fit_ln <- fitdist(positive_trick_plays$YDS_GAINED, "lnorm")
+fit_exp <- fitdist(positive_trick_plays$YDS_GAINED, "exp")
+
+fit_P  <- fitdist(positive_trick_plays$YDS_GAINED, "pareto",
+                  start = list(shape = 1, scale = 500))
+fit_B  <- fitdist(positive_trick_plays$YDS_GAINED, "burr",
+                  start = list(shape1 = 0.3, shape2 = 1, rate = 1))
+
+plot.legend <- c("lognormal", "burr")
+denscomp(list(fit_ln, fit_B),
+         legendtext = plot.legend)
+
+cdfcomp(list(fit_ln, fit_B),
+         legendtext = plot.legend)
+
+gofstat(list(fit_w, fit_g, fit_ln, fit_exp, fit_P, fit_B), 
+        fitnames = c("Weibull", "gamma", "lnorm", "exp", "pareto", "burr"))
+
+ests <- bootdist(fit_ln, niter = 1e3)
+summary(ests)
+
+rlnorm(1, meanlog = 1.4656, sdlog = .9465) # final dist
+
+### Fit dist for negative trick plays
+plotdist(negative_trick_plays$YDS_LOST, histo = TRUE, demp = TRUE)
+
+fit_w  <- fitdist(negative_trick_plays$YDS_LOST, "weibull")
+fit_g <- fitdist(negative_trick_plays$YDS_LOST, "gamma")
+fit_ln <- fitdist(negative_trick_plays$YDS_LOST, "lnorm")
+fit_exp <- fitdist(negative_trick_plays$YDS_LOST, "exp")
+
+par(mfrow=c(1,1))
+plot.legend <- c("Weibull", "gamma", "lognormal", "exponential")
+denscomp(list(fit_w, fit_g, fit_ln, fit_exp),
+         legendtext = plot.legend)
+
+gofstat(list(fit_w, fit_g, fit_ln, fit_exp), 
+        fitnames = c("Weibull", "gamma", "lnorm", "exp"))
+
+ests <- bootdist(fit_ln, niter = 1e3)
+summary(ests)
+
+rlnorm(1, meanlog = 1.0617, sdlog = .8847)
+
+### ----
 
 subset_2019 %>%
    group_by(pff_GAMEID) %>%
