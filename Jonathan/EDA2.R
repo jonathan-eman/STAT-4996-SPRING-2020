@@ -98,10 +98,10 @@ subset_2019 %>%
    dplyr::select(YDS_GAINED) -> runs
 
 runs %>%
-   filter(YDS_GAINED >= 0) -> positive_runs
+   filter(YDS_GAINED > 0) -> positive_runs
 
 runs %>%
-   filter(YDS_GAINED < 0) %>%
+   filter(YDS_GAINED <= 0) %>%
    mutate(YDS_LOST = abs(YDS_GAINED)) -> negative_runs
 
 ggplot(positive_runs) +
@@ -161,7 +161,7 @@ summary(ests)
 
 
 
-### Fit dist for negative trick plays
+### Fit dist for negative deep pass plays
 plotdist(negative_deep_passes$YDS_LOST, histo = TRUE, demp = TRUE)
 
 fit_w  <- fitdist(negative_deep_passes$YDS_LOST, "weibull")
@@ -299,3 +299,8 @@ summary(field_goal_probability_model)
 field_goal_probability <- function(x) {
    exp(2.410322 - 0.064872*x) / (1 + exp(2.410322 - 0.064872*x))
 }
+
+### Turnover analysis
+subset_2019 %>%
+   group_by(pff_DEEPPASS) %>%
+   summarize(mean(pff_DRIVEENDEVENT == "INTERCEPTION"))

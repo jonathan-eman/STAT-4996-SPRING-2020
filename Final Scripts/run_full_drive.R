@@ -28,21 +28,54 @@ full_drive <- function(A, B, C, D, E, F){
           play_type_num <- sample.int(2, size = 1, prob = c(.528, .472))
           play_type <- c("P", "R")[play_type_num]
           
-          if(play_type == "P") {
-             yards_gained = remg(1, -2, 3, .1)
-             time_elapsed = rnorm(1, 20/60, 8/60)
-          } else {
-             yards_gained = remg(1, -2.5, 2, .05)
-             time_elapsed = rnorm(1, 12/60, 6/60)
+          if (play_type == "P") {
+             int <- sample.int(3, size = 1, 
+                               prob = c(.540, .370, .090))
+             pos_neg <- c("POS", "0", "NEG")[int]
+             if (pos_neg == "POS") {
+                yards_gained = rlnorm(1, meanlog = 2.04, sdlog = .79) 
+             } else if (pos_neg == "NEG") {
+                yards_gained = -rweibull(1, shape = 1.580, scale = 5.935)
+             } else {
+                yards_gained = 0 
+             }
+             
+             time_elapsed = rnorm(1, 20/60, 8/60) 
+             
+          } else if (play_type == "R") {
+             int <- sample.int(2, size = 1, 
+                               prob = c(.789, .211))
+             pos_neg <- c("POS", "NEG")[int]
+             if (pos_neg == "POS") {
+                yards_gained = rlnorm(1, meanlog = 1.454, sdlog = .916) 
+             } else if (pos_neg == "NEG") {
+                yards_gained = -rlnorm(1, meanlog = .874, sdlog = .872)
+             }
+             
+             time_elapsed = rnorm(1, 12/60, 6/60) 
           }
           
           A = A - yards_gained
           B = B - round(time_elapsed, 2)
           C = C - yards_gained
-          D = ifelse(C <= 0, 1, C + 1)
+          D = ifelse(C <= 0, 1, D + 1)
           
           if (D == 1) { #if first down, reset YTG to 10
              C = 10
+          }
+          
+          if(play_type == "P") {
+             turnover <- sample.int(2, size = 1, 
+                                    prob = c(.96, .04)) - 1
+             D = ifelse(turnover == 1, 0, D)
+          }
+          
+          if (D == 0) { # interception
+             drive_result$end_yard <- A
+             drive_result$end_time <- B
+             drive_result$event <- "Interception"
+             print("Interception")
+             is_not_done <- FALSE
           }
           
           k <- k + 1
@@ -90,16 +123,34 @@ full_drive <- function(A, B, C, D, E, F){
           play_type <- c("P", "R", "DP", "TPR")[play_type_num]
           
           if (play_type == "P") {
-             yards_gained = remg(1, -2, 3, .1)
-             time_elapsed = rnorm(1, 20/60, 8/60) 
+             int <- sample.int(3, size = 1, 
+                               prob = c(.540, .370, .090))
+             pos_neg <- c("POS", "0", "NEG")[int]
+             if (pos_neg == "POS") {
+                yards_gained = rlnorm(1, meanlog = 2.04, sdlog = .79) 
+             } else if (pos_neg == "NEG") {
+                yards_gained = -rweibull(1, shape = 1.580, scale = 5.935)
+             } else {
+                yards_gained = 0 
+             }
+             
+             time_elapsed = rnorm(1, 15/60, 4/60) 
              
          } else if (play_type == "R") {
-             yards_gained = remg(1, -2, 3, .1)
-             time_elapsed = rnorm(1, 12/60, 6/60) 
+            int <- sample.int(2, size = 1, 
+                              prob = c(.789, .211))
+            pos_neg <- c("POS", "NEG")[int]
+            if (pos_neg == "POS") {
+               yards_gained = rlnorm(1, meanlog = 1.454, sdlog = .916) 
+            } else if (pos_neg == "NEG") {
+               yards_gained = -rlnorm(1, meanlog = .874, sdlog = .872)
+            }
+            
+             time_elapsed = rnorm(1, 10/60, 2/60) 
              
          } else if (play_type == "DP") {
             int <- sample.int(3, size = 1, 
-                              prob = c(.412, .572, .016))
+                              prob = c(.424, .56, .016))
             pos_neg <- c("POS", "0", "NEG")[int]
             if (pos_neg == "POS") {
                yards_gained = rburr(1, shape1 = 2.7031, shape2 = 2.6202,
@@ -110,11 +161,11 @@ full_drive <- function(A, B, C, D, E, F){
                yards_gained = 0 
             }
             
-             time_elapsed = rnorm(1, 20/60, 8/60) 
+             time_elapsed = rnorm(1, 20/60, 6/60) 
             
          } else if (play_type == "TPR") {
              int <- sample.int(2, size = 1, 
-                                   prob = c(.85, .15))
+                                   prob = c(.90, .10))
              pos_neg <- c("POS", "NEG")[int]
              if (pos_neg == "POS") {
                 yards_gained = rlnorm(1, meanlog = 1.4656, sdlog = .9465) 
@@ -124,13 +175,23 @@ full_drive <- function(A, B, C, D, E, F){
                 yards_gained = 0 
             }
              
-             time_elapsed = rnorm(1, 15/60, 7/60)
+             time_elapsed = rnorm(1, 13/60, 7/60)
           }
           
           A = A - yards_gained
           B = B - round(time_elapsed, 2)
           C = C - yards_gained
-          D = ifelse(C <= 0, 1, C+1)
+          D = ifelse(C <= 0, 1, D + 1)
+          
+          if(play_type == "DP") {
+             turnover <- sample.int(2, size = 1, 
+                                    prob = c(.88, .12)) - 1
+             D = ifelse(turnover == 1, 0, D)
+          } else if(play_type == "P") {
+             turnover <- sample.int(2, size = 1, 
+                                    prob = c(.96, .04)) - 1
+             D = ifelse(turnover == 1, 0, D)
+          }
           
           if (D == 1) { #if first down, reset YTG to 10
              C = 10
@@ -138,17 +199,29 @@ full_drive <- function(A, B, C, D, E, F){
           
           k <- k + 1
           
+         if (D == 5) { # turnover on downs
+          drive_result$end_yard <- A
+          drive_result$end_time <- B
+          drive_result$event <- "Turnover on Downs"
+          print("TOD")
+          is_not_done <- FALSE
+       } 
+          
+          if (D == 0) { # interception
+          drive_result$end_yard <- A
+          drive_result$end_time <- B
+          drive_result$event <- "Interception"
+          print("Interception")
+          is_not_done <- FALSE
+       }
+          
        } else if (A <= 0) {
           drive_result$score <- 7
           drive_result$end_time <- B
           drive_result$event <- "Touchdown"
+          print("Touchdown")
           is_not_done <- FALSE
-       } else if (D == 5) { # turnover on downs
-          drive_result$end_yard <- A
-          drive_result$end_time <- B
-          drive_result$event <- "Turnover on Downs"
-          is_not_done <- FALSE
-       } 
+       }
        
        if(k > 100){
           drive_result$end_yard <- C
@@ -157,31 +230,6 @@ full_drive <- function(A, B, C, D, E, F){
        }
    }
   }
+  
   print(drive_result)
 }
-
-# #helper function that prints current state in pretty way
-# print_status <- function(S1, y){
-#   if(S1$C>50){
-#     print(paste0("YTG: ", S1$A, " Down: ", S1$B, " LOS: own ", 100-S1$C, " Yards gained: ", y)) #the states are not saved!
-#   }else if(S1$C==50){
-#     print(paste0("YTG: ", S1$A, " Down: ", S1$B, " LOS: ", S1$C, " Yards gained: ", y))
-#   }else if(S1$C<50 & S1$C>20){
-#     print(paste0("YTG: ", S1$A, " Down: ", S1$B, " LOS: opponent's ", S1$C, " Yards gained: ", y))
-#   }else{
-#     print(paste0("RED ZONE ALERT!!! YTG: ", S1$A, " Down: ", S1$B, " LOS: opponent's ", S1$C, " Yards gained: ", y))
-#   }
-# }
-# 
-# turnover_on_downs_print_status <- function(y){
-#   #y is in terms of your team's last possession.  So to get it in terms of your opponents position
-#   #we need to take 100-y
-#   x <- 100-y
-#   if(x>50){
-#     print(paste0("Sorry, you have lost possession on downs.  Your opponent gets the ball on their own ", 100-x, " yard line."))
-#   }else if(x==50){
-#     print(paste0("Sorry, you have lost possession on downs.  Your opponent gets the ball on the ", x, " yard line."))
-#   }else{
-#     print(paste0("Sorry, you have lost possession on downs.  Your opponent gets the ball on your ", x, " yard line."))
-#   }
-# }
